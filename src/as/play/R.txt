@@ -1,0 +1,6 @@
+package as.play;
+
+@FunctionalInterface
+interface R {
+	public void run () throws Exception;
+}

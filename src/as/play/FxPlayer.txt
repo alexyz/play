@@ -1,0 +1,52 @@
+package as.play;
+import java.io.File;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaPlayer.Status;
+
+public class FxPlayer extends Player {
+	
+	private final JFXPanel p;
+	private MediaPlayer mp;
+	
+	public FxPlayer () {
+		//javafx.application.Application.launch();
+		this.p = new javafx.embed.swing.JFXPanel();
+	}
+	
+	private void init() {
+		if (mp == null) {
+			Media m = new Media(f.toURI().toString());
+			mp = new MediaPlayer(m);
+			mp.setOnPlaying(() -> firePlay());
+			mp.setOnStopped(() -> fireStop());
+			mp.setOnEndOfMedia(() -> fireEnd());
+			mp.setOnHalted(() -> System.out.println("fx halted"));
+			mp.setOnStalled(() -> System.out.println("fx stalled"));
+			mp.setOnPaused(() -> firePause());
+		}
+	}
+	
+	@Override
+	public void play () {
+		init();
+		mp.play();
+	}
+	
+	@Override
+	public void pause () {
+		if (mp.getStatus() == Status.PAUSED) {
+			mp.play();
+		} else if (mp.getStatus() == Status.PLAYING) {
+			mp.pause();
+		}
+	}
+	
+	@Override
+	public void stop () {
+		mp.stop();
+	}
+	
+}

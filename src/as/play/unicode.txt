@@ -1,0 +1,68 @@
+package as.play;
+
+import java.awt.AWTEvent;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.ScrollPane;
+import java.awt.Toolkit;
+
+import javax.swing.*;
+
+public class unicode {
+	
+	public static void main (String[] args) {
+//		EventQueue eventQueue = Toolkit.getDefaultToolkit().getSystemEventQueue();
+//        eventQueue.push(new EventQueue() {
+//        	@Override
+//        	protected void dispatchEvent (AWTEvent event) {
+//        		try {
+//        			System.out.println("event " + event);
+//        		} catch (Exception e) {
+//        			//
+//        		}
+//        	}
+//        });
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException (Thread t, Throwable e) {
+				System.out.println("t=" + t + " e=" + e);
+			}
+		});
+        SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run () {
+				throw new RuntimeException();
+			}
+		});
+		JPanel p = new JPanel();
+		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+//		String[] names = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+//		System.out.println(names.length);
+		String symbols = "";
+		for (int n = 0; n < symbols.length(); n++) {
+			JLabel a = new JLabel(Integer.toHexString(symbols.charAt(n)));
+			JLabel b = new JLabel("" + symbols.charAt(n));
+			b.setFont(new Font("Webdings", 0, 24));
+			JPanel q = new JPanel();
+			q.add(a);
+			q.add(b);
+			p.add(q);
+		}
+//		for (String s : a) {
+//			JPanel q = new JPanel();
+//			q.add(new JLabel(s));
+//			JLabel x = new JLabel("[ \u23e9 ]");
+//			x.setFont(new Font(s, 0, 16));
+//			q.add(x);
+//			p.add(q);
+//		}
+		JFrame f = new JFrame();
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		f.setContentPane(new JScrollPane(p));
+		f.setPreferredSize(new Dimension(640,480));
+		f.pack();
+		//f.setVisible(true);
+	}
+	
+}

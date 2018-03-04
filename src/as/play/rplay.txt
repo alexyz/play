@@ -1,0 +1,56 @@
+package as.play;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class rplay {
+	
+	public static void main(String[] args) throws Exception {
+		File f = new File(args.length > 0 ? args[0] : System.getProperty("user.dir"));
+		if (!f.isDirectory()) {
+			throw new Exception("not a directory: " + f);
+		}
+		List<File> list = dir(new ArrayList<>(), f);
+		Collections.shuffle(list);
+		
+		int[] a = new int[1];
+		Thread t = new Thread(() -> {
+			try {
+				while (System.in.read() != -1) {
+					a[0]++;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		t.setDaemon(true);
+		t.start();
+		
+		for (int n = 0; n < list.size(); n++) {
+			File g = list.get(n);
+			System.out.println(String.format("%d/%d %s", n+1, list.size(), g));
+			ProcessBuilder pb = new ProcessBuilder("afplay", "-v", "0.5", g.getAbsolutePath());
+			int b = a[0];
+			Process p = pb.start();
+			while (p.isAlive()) {
+				if (!p.waitFor(100, TimeUnit.MILLISECONDS) && a[0] != b) {
+					p.destroy();
+				}
+			}
+			Thread.sleep(100);
+		}
+	}
+	
+	private static List<File> dir(List<File> list, File f) {
+		if (f.isDirectory()) {
+			for (File g : f.listFiles()) {
+				dir(list,g);
+			}
+		} else if (f.isFile()) {
+			list.add(f);
+		}
+		return list;
+	}
+	
+}
