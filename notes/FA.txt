@@ -1,0 +1,18 @@
+package as.play.cfg;
+
+import javax.xml.bind.annotation.adapters.XmlAdapter;
+
+public class FA extends XmlAdapter<String,Float> {
+
+	@Override
+	public Float unmarshal (String v) throws Exception {
+		return Float.valueOf(v != null ? Float.parseFloat(v.toString()) : 0);
+	}
+
+	@Override
+	public String marshal (Float v) throws Exception {
+		float f = v != null ? v.floatValue() : 0; 
+		return f != 0 ? Float.toString(f) : null;
+	}
+
+}

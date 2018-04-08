@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="ASCII" standalone="no"?>
+<project default="deploy">
+	<target name="deploy">
+		<copy file="target/play.jar" tofile="${user.home}/Dropbox/GitHub/play.jar"/>
+	</target>
+</project>

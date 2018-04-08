@@ -1,13 +1,20 @@
 package as.play;
 
 import java.awt.BorderLayout;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
 import javax.swing.*;
+import javax.swing.Timer;
 
 import static as.play.SwingUtil.*;
 
@@ -15,33 +22,39 @@ public class ButtonPanel extends JPanel {
 	
 	private static final Log log = new Log(ButtonPanel.class);
 	
-	private final JLabel infoLabel = new JLabel(" ");
+	private final JLabel statusLabel = new JLabel(" ");
 	private final JTabbedPane tabs = new JTabbedPane();
-	private final JToolBar bar = new JToolBar();
+//	private final JToolBar bar = new JToolBar();
+	private final Timer timer = new Timer(100, e -> updateStatus());
 	
-	private Player player;
-
+	private Engine engine;
 	private String mode;
 	private File currentFile;
+	private long startTimeNano;
+	private volatile Info currentInfo;
 	
 	public ButtonPanel () {
-		super(new BorderLayout());
-
-//		setBorder(BorderFactory.createLineBorder(Color.gray));
-//		infoLabel.setBorder(BorderFactory.createLineBorder(Color.gray));
-//		tabs.setBorder(BorderFactory.createLineBorder(Color.gray));
-//		bar.setBorder(BorderFactory.createLineBorder(Color.gray));
+//		super(new BorderLayout());
+		super(new GridBagLayout());
 		
-		
+		JPanel bar = new JPanel(new GridBagLayout());
 		bar.add(webdingsButton(WD_LEFT2, e -> prev()));
 		bar.add(webdingsButton(WD_RIGHT2, e -> playnext()));
 		bar.add(webdingsButton(WD_RIGHT, e -> playcurrent()));
 		bar.add(webdingsButton(WD_PAUSE, e -> pause()));
 		bar.add(webdingsButton(WD_STOP, e -> stop()));
 		
-		add(bar, BorderLayout.NORTH);
-		add(tabs, BorderLayout.CENTER);
-		add(infoLabel, BorderLayout.SOUTH);
+//		add(bar, BorderLayout.NORTH);
+//		add(tabs, BorderLayout.CENTER);
+//		add(statusLabel, BorderLayout.SOUTH);
+		add(bar, gbc().pos(1,1).fillBoth().insets(5));
+		add(tabs, gbc().pos(1,2).weightBoth().fillBoth().insets(0,5,0,5));
+		add(statusLabel, gbc().pos(1,3).fillBoth().insets(5));
+	}
+	
+	@Override
+	public void validate () {
+		//setMinimumSize(new Dimension(getFont().getSize()*2));
 	}
 	
 	public void setMode (String mode) {
@@ -49,17 +62,17 @@ public class ButtonPanel extends JPanel {
 		this.mode = mode;
 	}
 	
-	// pc from player
+	// pc from player - on AWT thread
 	private void onchange (PropertyChangeEvent e) {
-		String name = e.getPropertyName();
-		Object value = e.getNewValue();
-		log.println("property change: " + name + " -> " + value);
-		switch (name) {
-			case Player.DONE: playnext(); break;
-			default: break;
+		String n = e.getPropertyName();
+		Object v = e.getNewValue();
+		log.println("property change: " + n + " -> " + v);
+		switch (n) {
+			case Engine.exit: onexit(((Integer)v).intValue()); return;
+			case Engine.start: onstart((File)v); return;
 		}
 	}
-
+	
 	private void prev () {
 		log.println("prev");
 	}
@@ -69,49 +82,104 @@ public class ButtonPanel extends JPanel {
 	}
 	
 	public void playspecific (File f) {
-		log.println("play: " + (f != null ? f.getName() : null));
-		FilePanel fp = (FilePanel) tabs.getSelectedComponent();
+		log.println("playspecific: " + (f != null ? f.getName() : null));
 		if (f != null) {
-			player.play(f);
-			Util.increment(f);
-			currentFile = f;
-			repaint();
-			infoLabel.setText("playing " + f.getName());
+			engine.stop();
+			engine.play(f);
 		}
 	}
 	
-	public void playnext() {
-		log.println("playnext");
+	private void updateStatus() {
+		statusLabel.setText(statusString());
+	}
+	
+	private String statusString() {
+		if (currentFile != null) {
+			double s = Util.nanoToS(System.nanoTime() - startTimeNano);
+			Info i = currentInfo;
+			StringBuffer sb = new StringBuffer("playing ");
+			sb.append(Util.formatTime(s)).append(" * ");
+			if (i != null) {
+				sb.append(Util.formatTime(i.duration));
+				sb.append(" * ").append(i.type);
+				sb.append(" * ").append((int) i.rate).append(" kbps");
+				sb.append(" * ").append((int) i.freq).append(" Hz");
+				sb.append(" * ").append(i.ch);
+			}
+			//sb.append(currentFile.getName());
+			return sb.toString();
+		} else {
+			return "stopped";
+		}
+	}
+	
+	private void onstart(File f) {
+		log.println("on start");
+		startTimeNano = System.nanoTime();
+		currentFile = f;
+		Util.EX.submit(() -> { currentInfo = engine.info(f); });
+		PlayFrame.config.get(f, true).increment();
+		PlayFrame.saveConfig();
+//		Util.increment(f);
+		updateStatus();
+		timer.start();
+		repaint();
+	}
+	
+	private void onexit (int v) {
+		log.println("on exit " + v);
+		startTimeNano = 0;
+		currentFile = null;
+		currentInfo = null;
+		updateStatus();
+		timer.stop();
+		repaint();
+		
+		if (v == 0) {
+			playnext();
+		}
+	}
+	
+	private void playnext () {
+		log.println("play next");
 		FilePanel fp = (FilePanel) tabs.getSelectedComponent();
 		File f = fp.next(mode);
-		playspecific(f);
+		if (f != null) {
+			playspecific(f);
+		}
+	}
+
+	public Engine getEngine () {
+		return engine;
 	}
 	
-	public void setPlayer (Player p) {
-		log.println("set player " + p);
-		if (this.player != null) {
-			this.player.stop();
-			for (PropertyChangeListener l : this.player.getProps().getPropertyChangeListeners()) {
-				this.player.getProps().removePropertyChangeListener(l);
+	public void setEngine (Engine p) {
+		log.println("set engine " + p);
+		if (this.engine != null) {
+			this.engine.stop();
+			for (PropertyChangeListener l : this.engine.getProps().getPropertyChangeListeners()) {
+				this.engine.getProps().removePropertyChangeListener(l);
 			}
 		}
-		this.player = p;
-		this.player.getProps().addPropertyChangeListener(e -> SwingUtilities.invokeLater(() -> onchange(e)));
+		this.engine = p;
+		this.engine.getProps().addPropertyChangeListener(e -> SwingUtilities.invokeLater(() -> onchange(e)));
 	}
 	
 	public void pause () {
-		if (player != null) {
-			player.pause();
-			infoLabel.setText("paused");
+		if (engine != null) {
+			engine.pause();
+			//statusLabel.setText("paused");
+			updateStatus();
 		}
 	}
 	
 	public void stop () {
-		if (player != null) {
-			player.stop();
+		if (engine != null) {
+			engine.stop();
 			currentFile = null;
+			timer.stop();
 			repaint();
-			infoLabel.setText("stopped");
+			updateStatus();
 		}
 	}
 	
@@ -135,7 +203,7 @@ public class ButtonPanel extends JPanel {
 		for (int n = 0; n < tabs.getTabCount(); n++) {
 			FilePanel fp = (FilePanel) tabs.getComponentAt(n);
 			if (fp != null) {
-				p.put("tabdir" + n, fp.getDir());
+				p.put("tabdir" + n, fp.getDir().getAbsolutePath());
 				p.put("tabname" + n, tabs.getTitleAt(n));
 			}
 		}
@@ -150,7 +218,7 @@ public class ButtonPanel extends JPanel {
 			tabs.setSelectedIndex(tabs.getTabCount()-1);
 		}
 	}
-
+	
 	public void closetab () {
 		log.println("close tab");
 		int i = tabs.getSelectedIndex();
@@ -161,7 +229,7 @@ public class ButtonPanel extends JPanel {
 			}
 		}
 	}
-
+	
 	public void renametab () {
 		log.println("rename tab");
 		int i = tabs.getSelectedIndex();
@@ -173,52 +241,62 @@ public class ButtonPanel extends JPanel {
 			}
 		}
 	}
-
+	
 	public void changedir () {
 		log.println("change dir");
-		int i = tabs.getSelectedIndex();
-		if (i >= 0) {
-			FilePanel fp = (FilePanel) tabs.getComponentAt(i);
-			log.println("tab comp=" + fp);
-			fp.changedir();
-		}
+		Util.accept(getSelectedFilePanel(), fp -> fp.changedir());
 	}
-
+	
 	public File currentFile () {
 		return currentFile;
 	}
-
-//	private class BPMA extends MouseAdapter {
-//		@Override
-//		public void mouseClicked (MouseEvent e) {
-//			log.println("tabs mouse clicked " + e.getClickCount());
-//			if (!e.isPopupTrigger() && e.getClickCount() == 2) {
-//				addtab();
-//			}
-//		}
-//		
-//		@Override
-//		public void mousePressed (MouseEvent e) {
-//			if (e.isPopupTrigger()) {
-//				popup(e.getPoint());
-//			}
-//		}
-//		
-//		@Override
-//		public void mouseReleased (MouseEvent e) {
-//			if (e.isPopupTrigger()) {
-//				popup(e.getPoint());
-//			}
-//		}
-//
-//		private void popup (Point p) {
-//			JPopupMenu menu = new JPopupMenu("Editor");
-//			menu.add(menuItem("Rename", e -> renametab()));
-//			menu.add(menuItem("Close", e -> closetab()));
-//			menu.show(tabs, p.x, p.y);
-//		}
-//		
-//		
-//	}
 	
+	public void rename () {
+		log.println("rename");
+		Util.accept(getSelectedFilePanel(), fp -> fp.rename());
+	}
+	
+	public void opendir () {
+		log.println("opendir");
+		Util.accept(getSelectedFile(), f -> {
+			try {
+				Desktop.getDesktop().open(f.getParentFile());
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(this, e.toString(), "Open Dir", JOptionPane.ERROR_MESSAGE);
+			}
+		});
+	}
+	
+	private FilePanel getSelectedFilePanel () {
+		int i = tabs.getSelectedIndex();
+		return i >= 0 ? (FilePanel) tabs.getComponentAt(i) : null;
+	}
+	
+	private File getSelectedFile () {
+		FilePanel fp = getSelectedFilePanel();
+		return fp != null ? fp.getSelectedFile() : null;
+	}
+	
+	public void info () {
+		log.println("info");
+		Util.accept(getSelectedFile(), f -> {
+			Info info = engine.info(f);
+			TextDialog dialog = new TextDialog(this, "Info: " + f.getName(), info.out);
+			dialog.setVisible(true);
+		});
+	}
+	
+	public void delete () {
+		log.println("delete");
+		Util.accept(getSelectedFilePanel(), fp -> fp.delete());
+	}
+	
+	public void massrename () {
+		Util.accept(getSelectedFilePanel(), fp -> fp.massrename());
+	}
+
+	public void convert () {
+		Util.accept(getSelectedFilePanel(), fp -> fp.convert());
+	}
+
 }

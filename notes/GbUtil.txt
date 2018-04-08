@@ -1,0 +1,62 @@
+package as.play;
+
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.util.function.Consumer;
+
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+public class GbUtil {
+	
+	public static final GbcConsumer GBA_EAST = c -> c.anchor = GridBagConstraints.EAST;
+	public static final GbcConsumer GBA_WEST = c -> c.anchor = GridBagConstraints.WEST;
+	public static final GbcConsumer GBA_NORTH = c -> c.anchor = GridBagConstraints.NORTH;
+	public static final GbcConsumer GBA_SOUTH = c -> c.anchor = GridBagConstraints.SOUTH;
+	public static final GbcConsumer GBA_CENTER = c -> c.anchor = GridBagConstraints.CENTER;
+	public static final GbcConsumer GBF_BOTH = c -> c.fill = GridBagConstraints.BOTH;
+	public static final GbcConsumer GBF_HORIZONTAL = c -> c.fill = GridBagConstraints.HORIZONTAL;
+	public static final GbcConsumer GBF_VERTICAL = c -> c.fill = GridBagConstraints.VERTICAL;
+	public static final GbcConsumer GBF_NONE = c -> c.fill = GridBagConstraints.NONE;
+	
+	public static JPanel gbxpanel (JComponent... a) {
+		JPanel p = new JPanel(new GridBagLayout());
+		for (int x = 0; x < a.length; x++) {
+			p.add(a[x], gbcons(gbpos(x,0)));
+		}
+		return p;
+	}
+	
+	/**
+	 * defaults: position=relative, size=1, weight=0, anchor=center, fill=none, insets=0, pad=0
+	 */
+	public static GridBagConstraints gbcons (GbcConsumer... gcons) {
+		GridBagConstraints c = new GridBagConstraints();
+		for (GbcConsumer gcon : gcons) {
+			gcon.accept(c);
+		}
+		return c;
+	}
+	
+	public static GbcConsumer gbpos(int x, int y) {
+		return c -> { c.gridx = x; c.gridy = y; };
+	}
+	
+	public static GbcConsumer gbsize(int x, int y) {
+		return c -> { c.gridwidth = x; c.gridheight = y; };
+	}
+	
+	public static GbcConsumer gbweight(int x, int y) {
+		return c -> { c.weightx = x; c.weighty = y; };
+	}
+	
+	public static GbcConsumer gbinsets (int z) {
+		return c -> c.insets = new Insets(z,z,z,z);
+	}
+	
+	public static interface GbcConsumer extends Consumer<GridBagConstraints> {
+		//
+	}
+	
+}

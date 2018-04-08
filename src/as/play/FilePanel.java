@@ -1,26 +1,18 @@
 package as.play;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.*;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 public class FilePanel extends JPanel {
 	
 	private static final Log log = new Log(FilePanel.class);
 	
-//	private final FileTableModel fileModel = new FileTableModel();
 	private final FileTable fileTable = new FileTable();
-	private final JLabel dirLabel = new JLabel();
 	
 	private ButtonPanel parent;
 	
@@ -29,18 +21,13 @@ public class FilePanel extends JPanel {
 		this.parent = parent;
 		
 		fileTable.getColumnModel().getColumn(1).setMaxWidth(30);
-		//fileTable.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		fileTable.getColumnModel().getColumn(2).setMaxWidth(40);
 		fileTable.addMouseListener(new FPMA());
 		
 		JScrollPane fileScroller = new JScrollPane(fileTable);
 		
-		add(dirLabel, BorderLayout.NORTH);
 		add(fileScroller, BorderLayout.CENTER);
 		
-	}
-	
-	public String getDir () {
-		return dirLabel.getText();
 	}
 	
 	public File next (String mode) {
@@ -66,32 +53,33 @@ public class FilePanel extends JPanel {
 		}
 	}
 
-//	public void onplay () {
-//		log.println("onplay");
-//		fileTable.repaint();
-//	}
-	
 	public File changedir () {
 		JFileChooser fc = new JFileChooser();
-		File f = new File(dirLabel.getText());
-		if (f.isDirectory()) {
+		File f = fileTable.getFileTableModel().getBaseDir();
+		if (f != null && f.isDirectory()) {
 			fc.setCurrentDirectory(f);
 		}
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			File dir = fc.getSelectedFile();
 			setDir(dir);
+			PlayFrame.savePrefs();
 			return dir;
 		} else {
 			return null;
 		}
 	}
 	
+	public File getDir () {
+		return fileTable.getFileTableModel().getBaseDir();
+	}
+	
 	public void setDir (File dir) {
+		fileTable.getFileTableModel().setBaseDir(dir);
 		fileTable.getFileTableModel().setFiles(Collections.emptyList());
-		dirLabel.setText("");
+//		dirLabel.setText("");
 		if (dir != null && dir.isDirectory()) {
-			dirLabel.setText(dir.getAbsolutePath());
+//			dirLabel.setText(dir.getAbsolutePath());
 			Util.EX.execute(() -> {
 				List<File> l = Util.dir3(dir, new ArrayList<>());
 				SwingUtilities.invokeLater(() -> fileTable.getFileTableModel().setFiles(l));
@@ -99,11 +87,16 @@ public class FilePanel extends JPanel {
 		}
 	}
 
-	public File getFile () {
+	public File getSelectedFile () {
+		List<File> list = getSelectedFiles();
+		return list.size() == 1 ? list.get(0) : null;
+	}
+	
+	public List<File> getSelectedFiles () {
 		int i = fileTable.getSelectionModel().getMinSelectionIndex();
-		File f = fileTable.getFileTableModel().getFile(i);
-		log.println("file panel get " + i + " is " + f);
-		return f;
+		int j = fileTable.getSelectionModel().getMaxSelectionIndex();
+		List<File> list = fileTable.getFileTableModel().getFiles(i, j);
+		return list;
 	}
 	
 	private class FPMA extends MouseAdapter {
@@ -116,6 +109,74 @@ public class FilePanel extends JPanel {
 				parent.playspecific(f);
 				//parent.playnext();
 			}
+		}
+	}
+
+	public void rename () {
+		Util.accept(getSelectedFile(), f1 -> {
+			log.println("rename " + f1);
+			String name = (String) JOptionPane.showInputDialog(this, "Rename " + f1.getName(), "Rename", JOptionPane.QUESTION_MESSAGE, null, null, f1.getName());
+			if (name != null && name.length() > 0 && !name.equals(f1.getName())) {
+				File f2 = new File(f1.getParentFile(), name);
+				if (!rename(f1, f2)) {
+					JOptionPane.showMessageDialog(this, "Could not rename", "Rename", JOptionPane.ERROR_MESSAGE);
+				}
+				PlayFrame.saveConfig();
+			}
+		});
+	}
+
+	public void massrename () {
+		List<File> list = getSelectedFiles();
+		if (list.size() > 0) {
+			RenameDialog d = new RenameDialog();
+			d.setFiles(list);
+			d.setOnOk(() -> {
+				for (Map.Entry<File,File> e : d.getMap().entrySet()) {
+					File f1 = e.getKey();
+					File f2 = e.getValue();
+					log.println("rename " + f1 + " to " + f2);
+					if (!rename(f1, f2)) {
+						JOptionPane.showMessageDialog(this, "Could not rename " + f1 + " to " + f2, "Rename", JOptionPane.ERROR_MESSAGE);
+					}
+				}
+				PlayFrame.saveConfig();
+			});
+			d.setLocationRelativeTo(this);
+			d.setVisible(true);
+		}
+	}
+
+	private boolean rename (File f1, File f2) {
+		if (f1.renameTo(f2)) {
+			// update model
+			fileTable.getFileTableModel().rename(f1, f2);
+			PlayFrame.config.rename(f1, f2);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public void delete () {
+		List<File> list = getSelectedFiles();
+		log.println("delete " + list.size());
+		String msg = list.size() == 1 ? list.get(0).getName() : list.size() + " files";
+		if (list.size() > 0 && JOptionPane.showConfirmDialog(this, "Really delete " + msg + "?", "Delete", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+			for (File f : list) {
+				f.delete();
+			}
+		}
+	}
+
+	public void convert () {
+		List<File> list = getSelectedFiles();
+		if (list.size() > 0) {
+			ConvertDialog d = new ConvertDialog();
+			d.setFiles(getDir(), list);
+			d.setEngine(parent.getEngine());
+			d.setLocationRelativeTo(this);
+			d.setVisible(true);
 		}
 	}
 

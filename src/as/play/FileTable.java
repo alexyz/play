@@ -44,10 +44,18 @@ public class FileTable extends JTable {
 			int mc = convertColumnIndexToModel(vc);
 			FileTableModel m = getFileTableModel();
 			File f = m.getFile(mr);
-			return f.getAbsolutePath();
-		} else {
-			return null;
+			File d = m.getBaseDir();
+			if (d != null) {
+				String s = "<html>";
+				while (f != null && !f.equals(d)) {
+					s = s + f.getName() + "<br>";
+					f = f.getParentFile();
+				}
+				//FIXME this is annoying
+				//return s.trim();
+			}
 		}
+		return null;
 	}
 	
 	@Override
@@ -58,10 +66,10 @@ public class FileTable extends JTable {
 			// need to convert before sending to table model
 			int row2 = convertRowIndexToModel(row);
 			int col2 = convertColumnIndexToModel(col);
-//			if (!getSelectionModel().isSelectedIndex(row)) {
-//				Color colour = ((MyTableModel<?>)getModel()).getColour(row2, col2);
-//				jcomp.setBackground(colour != null ? colour : tableBackgroundColour);
-//			}
+			//			if (!getSelectionModel().isSelectedIndex(row)) {
+			//				Color colour = ((MyTableModel<?>)getModel()).getColour(row2, col2);
+			//				jcomp.setBackground(colour != null ? colour : tableBackgroundColour);
+			//			}
 			File f1 = PlayFrame.frame.getButtonPanel().currentFile();
 			File f2 = getFileTableModel().getFile(row2);
 			jcomp.setFont(f1 != null && f2 != null && f1.equals(f2) ? boldTableFont : tableFont);	
