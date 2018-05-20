@@ -118,8 +118,8 @@ public class PlayFrame extends JFrame {
 	private void engine (String e) {
 		log.println("engine " + e);
 		switch (e) {
-			case Util.EFFMPEG: buttonPanel.setEngine(new FFEngine());
-			case Util.EAFPLAY: buttonPanel.setEngine(new AFEngine());
+			case Util.EFFMPEG: buttonPanel.setEngine(new FFEngine()); break;
+			case Util.EAFPLAY: buttonPanel.setEngine(new AFEngine()); break;
 			default:
 		}
 	}
