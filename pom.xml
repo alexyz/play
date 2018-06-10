@@ -37,7 +37,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>as.play.PlayFrame</mainClass>
+							<mainClass>com.github.alexyz.play.PlayFrame</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
