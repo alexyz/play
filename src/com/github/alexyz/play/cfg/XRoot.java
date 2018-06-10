@@ -8,5 +8,5 @@ import javax.xml.bind.annotation.*;
 public class XRoot {
 	@XmlElementWrapper(name = "files")
 	@XmlElement(name = "file")
-	public List<XInfo> files = new ArrayList<>();
+	public List<XFile> files = new ArrayList<>();
 }

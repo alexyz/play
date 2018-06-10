@@ -39,12 +39,6 @@ public final class Util {
 			"mp2", "mp3", "mp4", "m4a", "m4v", "aac", "ac3", "wav", "aiff", "alac", "flac", "ogg", "opus", "wma"
 	};
 	
-	public static <T> void accept (T obj, Consumer<T> f) {
-		if (obj != null) {
-			f.accept(obj);
-		}
-	}
-	
 	public static List<File> dir3 (File f, List<File> l) {
 		if (f.isDirectory()) {
 			for (File g : f.listFiles()) {

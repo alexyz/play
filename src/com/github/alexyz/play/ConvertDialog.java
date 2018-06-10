@@ -18,7 +18,7 @@ public class ConvertDialog extends JDialog {
 		UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 		ConvertDialog d = new ConvertDialog();
 		d.setEngine(new AFEngine());
-		File dir = new File("/Users/alex/Dropbox/HOME/Music/Incoming/65 days - Wild Light");
+		File dir = new File("/Users/alex/Dropbox/Music/Incoming/65 days - Wild Light");
 		d.setFiles(dir, Arrays.asList(dir.listFiles()));
 		border(d.getContentPane());
 		d.setModalityType(ModalityType.APPLICATION_MODAL);

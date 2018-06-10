@@ -5,6 +5,8 @@ import java.util.*;
 
 import javax.swing.table.AbstractTableModel;
 
+import com.github.alexyz.play.cfg.XFile;
+
 public class FileTableModel extends AbstractTableModel {
 	
 	private final List<File> files = new ArrayList<>();
@@ -50,11 +52,16 @@ public class FileTableModel extends AbstractTableModel {
 	public Object getValueAt (int r, int c) {
 		File f = getFile(r);
 		switch (c) {
-			case 0: return f.getName();
-			case 1: return PlayFrame.config.get(f).count;
-				//return Util.getCount(f);
-			case 2: return Util.formatSize(f.length());
-			default: throw new RuntimeException();
+			case 0:
+				return f.getName();
+			case 1: {
+				XFile xf = PlayFrame.config.getFile(f, false);
+				return xf != null ? xf.count : null;
+			}
+			case 2:
+				return Util.formatSize(f.length());
+			default:
+				throw new RuntimeException();
 		}
 	}
 
@@ -69,6 +76,22 @@ public class FileTableModel extends AbstractTableModel {
 		int i = files.indexOf(f1);
 		if (i >= 0) {
 			files.set(i, f2);
+			fireTableDataChanged();
+		}
+	}
+	
+	/** remove files no longer existing */
+	public void update () {
+		Iterator<File> i = files.iterator();
+		boolean changed = false;
+		while (i.hasNext()) {
+			if (!i.next().exists()) {
+				i.remove();
+				changed = true;
+			}
+		}
+		if (changed) {
+			fireTableDataChanged();
 		}
 	}
 	

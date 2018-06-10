@@ -1,16 +1,12 @@
 package com.github.alexyz.play;
 
-import java.awt.BorderLayout;
 import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
 import javax.swing.*;
@@ -118,9 +114,8 @@ public class ButtonPanel extends JPanel {
 		startTimeNano = System.nanoTime();
 		currentFile = f;
 		Util.EX.submit(() -> { currentInfo = engine.info(f); });
-		PlayFrame.config.get(f, true).increment();
-		PlayFrame.saveConfig();
-//		Util.increment(f);
+		PlayFrame.config.getFile(f, true).increment();
+		PlayFrame.config.save();
 		updateStatus();
 		timer.start();
 		repaint();
@@ -142,7 +137,7 @@ public class ButtonPanel extends JPanel {
 	
 	private void playnext () {
 		log.println("play next");
-		FilePanel fp = (FilePanel) tabs.getSelectedComponent();
+		FileTablePanel fp = (FileTablePanel) tabs.getSelectedComponent();
 		File f = fp.next(mode);
 		if (f != null) {
 			playspecific(f);
@@ -173,6 +168,7 @@ public class ButtonPanel extends JPanel {
 		}
 	}
 	
+	/** stop playing - synchronous */
 	public void stop () {
 		if (engine != null) {
 			engine.stop();
@@ -190,7 +186,7 @@ public class ButtonPanel extends JPanel {
 			String name = p.get("tabname" + n, "" + n);
 			if (dir != null && name != null) {
 				log.println("create tab " + n + ": " + name + ", " + dir);
-				FilePanel fp = new FilePanel(this);
+				FileTablePanel fp = new FileTablePanel(this);
 				fp.setDir(new File(dir));
 				tabs.addTab(name, fp);
 			}
@@ -201,7 +197,7 @@ public class ButtonPanel extends JPanel {
 		log.println("save prefs");
 		p.putInt("tabcount", tabs.getTabCount());
 		for (int n = 0; n < tabs.getTabCount(); n++) {
-			FilePanel fp = (FilePanel) tabs.getComponentAt(n);
+			FileTablePanel fp = (FileTablePanel) tabs.getComponentAt(n);
 			if (fp != null) {
 				p.put("tabdir" + n, fp.getDir().getAbsolutePath());
 				p.put("tabname" + n, tabs.getTitleAt(n));
@@ -211,7 +207,7 @@ public class ButtonPanel extends JPanel {
 	
 	public void addtab () {
 		log.println("add tab");
-		FilePanel fp = new FilePanel(ButtonPanel.this);
+		FileTablePanel fp = new FileTablePanel(ButtonPanel.this);
 		File dir = fp.changedir();
 		if (dir != null) {
 			tabs.addTab(dir.getName(), fp);
@@ -244,59 +240,77 @@ public class ButtonPanel extends JPanel {
 	
 	public void changedir () {
 		log.println("change dir");
-		Util.accept(getSelectedFilePanel(), fp -> fp.changedir());
+		FileTablePanel fp = getSelectedFilePanel();
+		if (fp != null) {
+			fp.changedir();
+		}
 	}
 	
+	/** return currently playing file */
 	public File currentFile () {
 		return currentFile;
 	}
 	
 	public void rename () {
 		log.println("rename");
-		Util.accept(getSelectedFilePanel(), fp -> fp.rename());
+		FileTablePanel fp = getSelectedFilePanel();
+		if (fp != null) {
+			fp.rename();
+		}
 	}
 	
 	public void opendir () {
 		log.println("opendir");
-		Util.accept(getSelectedFile(), f -> {
+		File f = getSelectedFile();
+		if (f != null) {
 			try {
 				Desktop.getDesktop().open(f.getParentFile());
 			} catch (IOException e) {
 				JOptionPane.showMessageDialog(this, e.toString(), "Open Dir", JOptionPane.ERROR_MESSAGE);
 			}
-		});
+		};
 	}
 	
-	private FilePanel getSelectedFilePanel () {
+	private FileTablePanel getSelectedFilePanel () {
 		int i = tabs.getSelectedIndex();
-		return i >= 0 ? (FilePanel) tabs.getComponentAt(i) : null;
+		return i >= 0 ? (FileTablePanel) tabs.getComponentAt(i) : null;
 	}
 	
 	private File getSelectedFile () {
-		FilePanel fp = getSelectedFilePanel();
+		FileTablePanel fp = getSelectedFilePanel();
 		return fp != null ? fp.getSelectedFile() : null;
 	}
 	
 	public void info () {
 		log.println("info");
-		Util.accept(getSelectedFile(), f -> {
+		File f = getSelectedFile();
+		if (f != null) {
 			Info info = engine.info(f);
 			TextDialog dialog = new TextDialog(this, "Info: " + f.getName(), info.out);
 			dialog.setVisible(true);
-		});
+		};
 	}
 	
 	public void delete () {
 		log.println("delete");
-		Util.accept(getSelectedFilePanel(), fp -> fp.delete());
+		FileTablePanel fp = getSelectedFilePanel();
+		if (fp != null) {
+			fp.delete();
+		}
 	}
 	
 	public void massrename () {
-		Util.accept(getSelectedFilePanel(), fp -> fp.massrename());
+		FileTablePanel fp = getSelectedFilePanel();
+		if (fp != null) {
+			fp.massrename();
+		}
 	}
 
 	public void convert () {
-		Util.accept(getSelectedFilePanel(), fp -> fp.convert());
+		FileTablePanel fp = getSelectedFilePanel();
+		if (fp != null) {
+			fp.convert();
+		}
 	}
 
 }

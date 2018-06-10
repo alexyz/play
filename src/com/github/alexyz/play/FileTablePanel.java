@@ -8,15 +8,15 @@ import java.util.*;
 
 import javax.swing.*;
 
-public class FilePanel extends JPanel {
+public class FileTablePanel extends JPanel {
 	
-	private static final Log log = new Log(FilePanel.class);
+	private static final Log log = new Log(FileTablePanel.class);
 	
 	private final FileTable fileTable = new FileTable();
 	
 	private ButtonPanel parent;
 	
-	public FilePanel (ButtonPanel parent) {
+	public FileTablePanel (ButtonPanel parent) {
 		super(new BorderLayout());
 		this.parent = parent;
 		
@@ -113,7 +113,8 @@ public class FilePanel extends JPanel {
 	}
 
 	public void rename () {
-		Util.accept(getSelectedFile(), f1 -> {
+		File f1 = getSelectedFile();
+		if (f1 != null) {
 			log.println("rename " + f1);
 			String name = (String) JOptionPane.showInputDialog(this, "Rename " + f1.getName(), "Rename", JOptionPane.QUESTION_MESSAGE, null, null, f1.getName());
 			if (name != null && name.length() > 0 && !name.equals(f1.getName())) {
@@ -121,9 +122,9 @@ public class FilePanel extends JPanel {
 				if (!rename(f1, f2)) {
 					JOptionPane.showMessageDialog(this, "Could not rename", "Rename", JOptionPane.ERROR_MESSAGE);
 				}
-				PlayFrame.saveConfig();
+				PlayFrame.config.save();
 			}
-		});
+		}
 	}
 
 	public void massrename () {
@@ -140,7 +141,7 @@ public class FilePanel extends JPanel {
 						JOptionPane.showMessageDialog(this, "Could not rename " + f1 + " to " + f2, "Rename", JOptionPane.ERROR_MESSAGE);
 					}
 				}
-				PlayFrame.saveConfig();
+				PlayFrame.config.save();
 			});
 			d.setLocationRelativeTo(this);
 			d.setVisible(true);
@@ -158,14 +159,26 @@ public class FilePanel extends JPanel {
 		}
 	}
 
+	/** prompt to delete selected files */
 	public void delete () {
 		List<File> list = getSelectedFiles();
 		log.println("delete " + list.size());
 		String msg = list.size() == 1 ? list.get(0).getName() : list.size() + " files";
 		if (list.size() > 0 && JOptionPane.showConfirmDialog(this, "Really delete " + msg + "?", "Delete", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
 			for (File f : list) {
-				f.delete();
+				// if f playing, stop
+				if (f.equals(parent.currentFile())) {
+					parent.stop();
+				}
+				if (f.delete()) {
+					PlayFrame.config.delete(f);
+					// update model
+					fileTable.getFileTableModel().update();
+				} else {
+					log.println("could not delete " + f);
+				}
 			}
+			PlayFrame.config.save();
 		}
 	}
 

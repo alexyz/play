@@ -50,22 +50,13 @@ public class PlayFrame extends JFrame {
 		}
 	}
 	
-	public static void saveConfig () {
-		try {
-			log.println("save config");
-			config.save();
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(frame, e.toString());
-		}
-	}
-	
 	public static void savePrefs () {
 		try {
 			log.println("save prefs");
 			frame.savePrefs(PREFS);
 			PREFS.flush();
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(frame, e.toString());
+			log.println("could not save prefs", e);
 		}
 	}
 	
@@ -191,7 +182,7 @@ public class PlayFrame extends JFrame {
 		public void windowClosing (WindowEvent ev) {
 			buttonPanel.stop();
 			savePrefs();
-			saveConfig();
+			config.save();
 		}
 	}
 	

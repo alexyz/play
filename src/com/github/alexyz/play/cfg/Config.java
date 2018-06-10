@@ -15,13 +15,13 @@ public class Config {
 		
 		XRoot root = new XRoot();
 		root.files = new ArrayList<>();
-		XInfo f = new XInfo();
+		XFile f = new XFile();
 		f.name = "cool.mp3";
 		f.count = 2;
 		f.len = 3.14f;
 		root.files.add(f);
 		
-		JAXBContext c = JAXBContext.newInstance(XRoot.class, XInfo.class);
+		JAXBContext c = JAXBContext.newInstance(XRoot.class, XFile.class);
 		Marshaller m = c.createMarshaller();
 		try (StringWriter w = new StringWriter()) {
 			m.marshal(root, w);
@@ -35,7 +35,7 @@ public class Config {
 	
 	public Config (File f) throws Exception {
 		this.configFile = f;
-		this.context = JAXBContext.newInstance(XRoot.class, XInfo.class);
+		this.context = JAXBContext.newInstance(XRoot.class, XFile.class);
 	}
 	
 	public void load () throws Exception {
@@ -51,45 +51,64 @@ public class Config {
 		}
 	}
 	
-	public void save () throws Exception {
+	public void save () {
 		log.println("save " + configFile.getAbsolutePath());
-		Marshaller m = context.createMarshaller();
-		m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-		try (FileOutputStream os = new FileOutputStream(configFile)) {
-			Collections.sort(root.files);
-			m.marshal(root, os);
-		}
-	}
-	
-	public void rename (File f1, File f2) {
-		log.println("rename " + f1 + " to " + f2);
-		XInfo info = new XInfo(f1.getName().toLowerCase());
-		int i = Collections.binarySearch(root.files, info);
-		if (i >= 0) {
-			info = root.files.remove(i);
-			info.name = f2.getName().toLowerCase();
-			int j = Collections.binarySearch(root.files, info);
-			if (j < 0) {
-				root.files.add(-(j + 1), info);
+		try {
+			Marshaller m = context.createMarshaller();
+			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+			try (FileOutputStream os = new FileOutputStream(configFile)) {
+				Collections.sort(root.files);
+				m.marshal(root, os);
 			}
+		} catch (IOException | JAXBException e) {
+			log.println("could not save config", e);
 		}
 	}
 	
-	public XInfo get (File f) {
-		return get(f, false);
+	/** remove file from config */
+	public void delete (File f1) {
+		int i = fileIndex(f1);
+		if (i >= 0) {
+			log.println("delete " + f1);
+			root.files.remove(i);
+		}
 	}
 	
-	public XInfo get (File f, boolean add) {
-		XInfo info = new XInfo();
+	/** rename file in config */
+	public void rename (File f1, File f2) {
+		int i = fileIndex(f1);
+		if (i >= 0) {
+			log.println("rename " + f1 + " to " + f2);
+			XFile info = root.files.remove(i);
+			info.name = f2.getName().toLowerCase();
+			insertFile(info);
+		}
+	}
+
+	private int fileIndex (File f1) {
+		XFile info = new XFile(f1.getName().toLowerCase());
+		return Collections.binarySearch(root.files, info);
+	}
+
+	private void insertFile (XFile info) {
+		int j = Collections.binarySearch(root.files, info);
+		if (j < 0) {
+			root.files.add(-(j + 1), info);
+		}
+	}
+	
+	/** get file info, create if required, return null otherwise */
+	public XFile getFile (File f, boolean add) {
+		XFile info = new XFile();
 		info.name = f.getName().toLowerCase();
 		int i = Collections.binarySearch(root.files, info);
 		if (i >= 0) {
 			return root.files.get(i);
-		} else {
-			if (add) {
-				root.files.add(-(i + 1), info);
-			}
+		} else if (add) {
+			root.files.add(-(i + 1), info);
 			return info;
+		} else {
+			return null;
 		}
 	}
 	

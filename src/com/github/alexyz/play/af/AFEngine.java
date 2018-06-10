@@ -41,7 +41,7 @@ public class AFEngine extends Engine {
 				} if ((mat = ratepat.matcher(line)).find()) {
 					info.rate = Float.parseFloat(mat.group(1))/1000;
 				} else {
-					log.println("[" + line + "]");
+					//log.println("[" + line + "]");
 				}
 			}
 			info.out = String.join("\n", lines);

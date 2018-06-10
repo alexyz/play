@@ -1,11 +1,10 @@
 package com.github.alexyz.play.cfg;
 
-import java.io.File;
-
 import javax.xml.bind.annotation.*;
 
+/** file info - name, count, length */
 @XmlRootElement(name = "file")
-public class XInfo implements Comparable<XInfo> {
+public class XFile implements Comparable<XFile> {
 	
 	@XmlAttribute(name = "name")
 	public String name;
@@ -14,11 +13,11 @@ public class XInfo implements Comparable<XInfo> {
 	@XmlAttribute(name = "len")
 	public Float len;
 	
-	public XInfo () {
+	public XFile () {
 		//
 	}
 	
-	public XInfo (String name) {
+	public XFile (String name) {
 		this.name = name;
 	}
 	
@@ -27,7 +26,7 @@ public class XInfo implements Comparable<XInfo> {
 	}
 	
 	@Override
-	public int compareTo (XInfo o) {
+	public int compareTo (XFile o) {
 		return String.valueOf(name).compareToIgnoreCase(String.valueOf(o.name));
 	}
 
