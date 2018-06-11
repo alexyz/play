@@ -20,7 +20,7 @@ public class Config {
 		f.count = 2;
 		f.len = 3.14f;
 		root.files.add(f);
-		
+
 		JAXBContext c = JAXBContext.newInstance(XRoot.class, XFile.class);
 		Marshaller m = c.createMarshaller();
 		try (StringWriter w = new StringWriter()) {
@@ -84,12 +84,12 @@ public class Config {
 			insertFile(info);
 		}
 	}
-
+	
 	private int fileIndex (File f1) {
 		XFile info = new XFile(f1.getName().toLowerCase());
 		return Collections.binarySearch(root.files, info);
 	}
-
+	
 	private void insertFile (XFile info) {
 		int j = Collections.binarySearch(root.files, info);
 		if (j < 0) {

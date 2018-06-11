@@ -67,52 +67,58 @@ public class ConvertDialog extends JDialog {
 		}
 		return files;
 	}
-
+	
 	private void convert () {
-		
-		List<File> files = files();
-		
-		if (files.size() == 0) {
-			JOptionPane.showMessageDialog(this, "No input files", "Convert", JOptionPane.ERROR_MESSAGE);
-			return;
-		}
-		
-		for (File f : files) {
-			if (!f.isFile()) {
-				JOptionPane.showMessageDialog(this, "Could not find input file " + f.getName(), "Convert", JOptionPane.ERROR_MESSAGE);
+		try {
+			List<File> files = files();
+			
+			if (files.size() == 0) {
+				JOptionPane.showMessageDialog(this, "No input files", "Convert", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-		}
-		
-		JFileChooser chooser = new JFileChooser();
-		boolean merge = mergeBox.isSelected();
-		String ext = engine.convertExt();
-		
-		// XXX dest dir playlist needs a change listener
-		
-		if (merge && files.size() > 0) {
-			chooser.setFileFilter(new FF(ext));
-			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-			if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-				File destfile = chooser.getSelectedFile();
-				File srctempfile = engine.merge(files);
-				engine.convert(srctempfile, destfile);
-				srctempfile.delete();
-			}
 			
-		} else {
-			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-				File destdir = chooser.getSelectedFile();
-				for (File srcfile : files) {
-					File destfile = new File(destdir, srcfile.getName() + ".converted." + ext);
-					engine.convert(srcfile, destfile);
+			for (File f : files) {
+				if (!f.isFile()) {
+					JOptionPane.showMessageDialog(this, "Could not find input file " + f.getName(), "Convert", JOptionPane.ERROR_MESSAGE);
+					return;
 				}
 			}
+			
+			if (mergeBox.isSelected() && files.size() > 0) {
+				convertmerge(files);
+			} else {
+				convertmany(files);
+			}
+			
+		} catch (Exception e) {
+			PlayFrame.showErrorDialog("Convert", e);
 		}
-		
 	}
 
+	private void convertmany (List<File> files) {
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File destdir = chooser.getSelectedFile();
+			for (File srcfile : files) {
+				File destfile = new File(destdir, srcfile.getName() + ".converted." + engine.convertExt());
+				engine.convert(srcfile, destfile);
+			}
+		}
+	}
+
+	private void convertmerge (List<File> files) {
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileFilter(new FF(engine.convertExt()));
+		chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+			File destfile = chooser.getSelectedFile();
+			File srctempfile = engine.merge(files);
+			engine.convert(srctempfile, destfile);
+			srctempfile.delete();
+		}
+	}
+	
 	public void setFiles (File dir, List<File> files) {
 		this.dir = dir;
 		StringBuilder sb = new StringBuilder();

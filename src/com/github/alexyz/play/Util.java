@@ -78,40 +78,18 @@ public final class Util {
 		return read(is, Charset.defaultCharset());
 	}
 	
+	/** read input stream into string, converting newlines to n */
 	public static String read (InputStream is, Charset cs) throws IOException {
 		return String.join("\n", readLines(is, cs));
 	}
 	
-	public static void write0 (OutputStream os, Charset cs, String... args) {
-		try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, cs))) {
-			for (String arg : args) {
-				pw.print(arg + "\0");
-			}
-		}
-	}
-	//
-	// public static Integer getCount (File f) {
-	// int count =
-	// PlayFrame.prefs().getInt(Integer.toHexString(f.getName().hashCode()), 0);
-	// return count > 0 ? Integer.valueOf(count) : null;
-	// }
-	//
-	// public static void setCount (File f, Integer i) {
-	// String hash = Integer.toHexString(f.getName().hashCode());
-	// Preferences prefs = PlayFrame.prefs();
-	// if (i != null && i.intValue() > 0) {
-	// prefs.putInt(hash, i.intValue());
-	// } else {
-	// prefs.remove(hash);
-	// }
-	// PlayFrame.savePrefs();
-	// }
-	
-	// public static void increment (File f) {
-	// String hash = Integer.toHexString(f.getName().hashCode());
-	// Preferences prefs = PlayFrame.prefs();
-	// prefs.putInt(hash, prefs.getInt(hash, 0) + 1);
-	// }
+//	public static void write0 (OutputStream os, Charset cs, String... args) {
+//		try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, cs))) {
+//			for (String arg : args) {
+//				pw.print(arg + "\0");
+//			}
+//		}
+//	}
 	
 	private Util () {
 		//
@@ -153,6 +131,7 @@ public final class Util {
 		}
 	}
 	
+	/** concat audio files to temp file */
 	public static File concat (List<File> srcs) {
 		List<AudioInputStream> clips = new ArrayList<>();
 		
@@ -168,6 +147,7 @@ public final class Util {
 			
 			try (AudioInputStream is = new AudioInputStream(new SequenceInputStream(Collections.enumeration(clips)), clips.get(0).getFormat(), len)) {
 				File dest = File.createTempFile("alexyz", null);
+				dest.deleteOnExit();
 				AudioSystem.write(is, format.getType(), dest);
 				return dest;
 			}

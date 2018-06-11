@@ -40,8 +40,8 @@ public class PlayFrame extends JFrame {
 			ToolTipManager.sharedInstance().setDismissDelay(10000);
 			ToolTipManager.sharedInstance().setReshowDelay(2000);
 			frame = new PlayFrame();
-			long t2 = System.nanoTime();
 			frame.setVisible(true);
+			long t2 = System.nanoTime();
 			log.println("start time: " + (t2-t1)/nanosins + " s");
 		} catch (Exception e) {
 			e.printStackTrace(System.out);
@@ -77,8 +77,6 @@ public class PlayFrame extends JFrame {
 	private JMenuBar menuBar () {
 		modemenu = radioMenu("Mode", m -> radioItem(m, e -> mode(m)), Util.MODES);
 		enginemenu = radioMenu("Engine", x -> radioItem(x, e -> engine(x)), Util.ENGINES);
-		LookAndFeelInfo[] lafs = UIManager.getInstalledLookAndFeels();
-//		lafmenu = radioMenu("LAF", i -> radioItem(i.getName(), e -> installlaf(i)), lafs);
 		
 		JMenuBar bar = new JMenuBar();
 		bar.add(menu("Tab",
@@ -101,7 +99,6 @@ public class PlayFrame extends JFrame {
 				menuItem("AFPlay...", e -> afopt()),
 				menuItem("FFmpeg...", e -> ffmpegopt())
 				));
-//		bar.add(lafmenu);
 				
 		return bar;
 	}
@@ -118,18 +115,6 @@ public class PlayFrame extends JFrame {
 	private void mode (String m) {
 		log.println("mode " + m);
 		buttonPanel.setMode(m);
-	}
-
-	private void installlaf (LookAndFeelInfo i) {
-		log.println("install laf " + i.getName());
-		try {
-			UIManager.setLookAndFeel(i.getClassName());
-			SwingUtilities.updateComponentTreeUI(this);
-			pack();
-		} catch (Exception e) {
-			e.printStackTrace(System.out);
-			JOptionPane.showMessageDialog(this, e.toString(), "LAF", JOptionPane.WARNING_MESSAGE);
-		}
 	}
 
 	private void ffmpegopt () {
@@ -157,7 +142,6 @@ public class PlayFrame extends JFrame {
 			setLocation(new Point(x, y));
 		}
 		
-//		radioSet(lafmenu, p.get("pflaf", UIManager.getLookAndFeel().getName()));
 		radioSet(modemenu, p.get("pfmode", Util.MSEQ));
 		radioSet(enginemenu, p.get("pfengine", Util.EAFPLAY));
 		
@@ -170,7 +154,6 @@ public class PlayFrame extends JFrame {
 		p.putInt("xwin", p1.x);
 		p.putInt("ywin", p1.y);
 		
-//		p.put("pflaf", radioGet(lafmenu));
 		p.put("pfmode", radioGet(modemenu));
 		p.put("pfengine", radioGet(enginemenu));
 		
@@ -186,4 +169,7 @@ public class PlayFrame extends JFrame {
 		}
 	}
 	
+	public static void showErrorDialog (String title, Exception e) {
+		JOptionPane.showMessageDialog(frame, e.toString(), title, JOptionPane.ERROR_MESSAGE);
+	}
 }

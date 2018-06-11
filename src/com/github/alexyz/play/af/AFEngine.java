@@ -62,11 +62,18 @@ public class AFEngine extends Engine {
 			// want to say - it's now playing
 			AFOptions opt = new AFOptions();
 			opt.load(PlayFrame.PREFS);
-			String[] a = { "afplay", 
-					"-v", Float.toString(opt.volume), 
-					"-r", Float.toString(opt.rate), 
-					f.getAbsolutePath()
-			};
+			List<String> a = new ArrayList<>();
+			a.add("afplay");
+			if (opt.volume > 0 && opt.volume != 1 && opt.volume <= 2) {
+				a.add("-v");
+				a.add(Float.toString(opt.volume));
+			}
+			if (opt.rate > 0 && opt.rate != 1 && opt.rate <= 2) {
+				a.add("-r");
+				a.add(Float.toString(opt.rate));
+			}
+			a.add(f.getAbsolutePath());
+			log.println("start " + a);
 			ProcessBuilder pb = new ProcessBuilder(a);
 			process = pb.start();
 			firestarted(f);
