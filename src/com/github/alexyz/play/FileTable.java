@@ -14,6 +14,7 @@ import java.io.File;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
@@ -23,8 +24,11 @@ public class FileTable extends JTable {
 	
 	public static final Color tableBackgroundColour = UIManager.getDefaults().getColor("Table.background");
 	public static final Font tableFont = UIManager.getDefaults().getFont("Table.font");
-	public static final Font monoTableFont = new Font("Monospaced", 0, tableFont.getSize());
+//	public static final Font monoTableFont = new Font("Monospaced", 0, tableFont.getSize());
 	public static final Font boldTableFont = tableFont.deriveFont(Font.BOLD);
+	private static final Color gray14 = new Color(0xee,0xee,0xee);
+	private static final Color gray12 = new Color(0xcc,0xcc,0xcc);
+	private static final Color gray10 = new Color(0xaa,0xaa,0xaa);
 	
 	public FileTable() {
 		setModel(new FileTableModel());
@@ -34,6 +38,7 @@ public class FileTable extends JTable {
 		return (FileTableModel) super.getModel();
 	}
 	
+	/*
 	@Override
 	public String getToolTipText(MouseEvent e) {
 		int vr = rowAtPoint(e.getPoint());
@@ -51,28 +56,45 @@ public class FileTable extends JTable {
 					s = s + f.getName() + "<br>";
 					f = f.getParentFile();
 				}
-				//FIXME this is annoying
-				//return s.trim();
+				return s.trim();
 			}
 		}
 		return null;
 	}
+	*/
 	
 	@Override
-	public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
-		Component comp = super.prepareRenderer(renderer, row, col);
+	public Component prepareRenderer(TableCellRenderer renderer, int vrow, int vcol) {
+		Component comp = super.prepareRenderer(renderer, vrow, vcol);
+		
 		if (comp instanceof JComponent) {
 			JComponent jcomp = (JComponent)comp;
 			// need to convert before sending to table model
-			int row2 = convertRowIndexToModel(row);
-			int col2 = convertColumnIndexToModel(col);
-			//			if (!getSelectionModel().isSelectedIndex(row)) {
-			//				Color colour = ((MyTableModel<?>)getModel()).getColour(row2, col2);
-			//				jcomp.setBackground(colour != null ? colour : tableBackgroundColour);
-			//			}
-			File f1 = PlayFrame.frame.getButtonPanel().currentFile();
-			File f2 = getFileTableModel().getFile(row2);
-			jcomp.setFont(f1 != null && f2 != null && f1.equals(f2) ? boldTableFont : tableFont);	
+			int row = convertRowIndexToModel(vrow);
+			int col = convertColumnIndexToModel(vcol);
+			FileTableModel model = getFileTableModel();
+			File currentFile = PlayFrame.frame.getButtonPanel().currentFile();
+			File rowFile = model.getFile(row);
+			boolean playing = currentFile != null && rowFile != null && currentFile.equals(rowFile);
+			
+			// sets inner border
+			//jcomp.setBorder(new LineBorder(Color.red));
+			
+			if (getSelectionModel().isSelectedIndex(row)) {
+				if (playing) {
+					jcomp.setFont(boldTableFont);
+				}
+			} else {
+				if (playing) {
+					jcomp.setBackground(gray10);
+					jcomp.setFont(boldTableFont);
+				} else {
+					int i = model.getParentIndex(row);
+					jcomp.setBackground((i & 1) == 0 ? tableBackgroundColour : gray14);
+				}
+			}
+			
+//			jcomp.setFont(playing ? boldTableFont : tableFont);	
 		}
 		return comp;
 	}

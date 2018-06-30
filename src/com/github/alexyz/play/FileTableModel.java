@@ -10,6 +10,7 @@ import com.github.alexyz.play.cfg.XFile;
 public class FileTableModel extends AbstractTableModel {
 	
 	private final List<File> files = new ArrayList<>();
+	private final Map<File,Integer> fileParents = new TreeMap<>();
 	private File baseDir;
 	
 	public File getBaseDir () {
@@ -69,27 +70,46 @@ public class FileTableModel extends AbstractTableModel {
 		this.files.clear();
 		this.files.addAll(files);
 		Collections.sort(this.files, new FileComparator());
+		update();
 		fireTableDataChanged();
+	}
+	
+	/** which number subdir is the file for this row in */
+	public int getParentIndex (int r) {
+		return fileParents.get(files.get(r).getParentFile()).intValue();
 	}
 
 	public void rename (File f1, File f2) {
 		int i = files.indexOf(f1);
 		if (i >= 0) {
 			files.set(i, f2);
+			update();
 			fireTableDataChanged();
 		}
 	}
 	
-	/** remove files no longer existing */
+	/** remove files no longer existing, refresh parent indexes */
 	public void update () {
 		Iterator<File> i = files.iterator();
 		boolean changed = false;
+		
+		Set<File> pset = new TreeSet<>();
+		
 		while (i.hasNext()) {
-			if (!i.next().exists()) {
+			File f = i.next();
+			pset.add(f.getParentFile());
+			if (!f.exists()) {
 				i.remove();
 				changed = true;
 			}
 		}
+		
+		this.fileParents.clear();
+		List<File> plist = new ArrayList<>(pset);
+		for (int n = 0; n < plist.size(); n++) {
+			this.fileParents.put(plist.get(n), Integer.valueOf(n));
+		}
+		
 		if (changed) {
 			fireTableDataChanged();
 		}
